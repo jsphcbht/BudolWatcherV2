@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0B1F3B">
+  <meta name="description" content="Student-friendly budget, expense & savings tracker in Philippine Peso">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>BudolWatcher</title>
+  
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" href="./assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+  <!-- Offline Banner -->
+  <div id="offlineBanner" class="offline-banner hidden">
+    📡 You're offline — changes saved locally
+  </div>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-icon">₱</span>
+        <span>BudolWatcher</span>
+      </div>
+      <div id="todayLabel" class="today-label"></div>
+    </div>
+    <div class="header-right">
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle dark mode">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- === DASHBOARD VIEW === -->
+    <section id="viewDashboard" class="tab-view active">
+      <div class="card card-hero">
+        <div class="card-label">AVAILABLE BALANCE</div>
+        <div id="availableNow" class="hero-amount">₱0.00</div>
+        <div class="hero-meta">
+          <div class="meta-item">
+            <span class="meta-label">Opening</span>
+            <span id="openingBalance" class="meta-value">₱0.00</span>
+          </div>
+          <div class="meta-divider"></div>
+          <div class="meta-item">
+            <span class="meta-label">Added</span>
+            <span id="addedToday" class="meta-value">₱0.00</span>
+          </div>
+          <div class="meta-divider"></div>
+          <div class="meta-item">
+            <span class="meta-label">Spent</span>
+            <span id="spentToday" class="meta-value">₱0.00</span>
+          </div>
+        </div>
+        <div class="utang-summary-container">
+          <div class="utang-sum-item">
+            <div class="utang-sum-label">Owes You</div>
+            <div id="dashOwesMe" class="utang-sum-val val-owes-me">₱0.00</div>
+          </div>
+          <div class="utang-sum-item">
+            <div class="utang-sum-label">You Owe</div>
+            <div id="dashOweThem" class="utang-sum-val val-owe-them">₱0.00</div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="budolMeterCard" class="budol-meter">
+        <div class="budol-header">
+          <span>Budol Level (Monthly)</span>
+          <span id="budolStatusText" class="budol-status budol-safe">Safe (0%)</span>
+        </div>
+        <div class="progress-bar"><div id="budolFill" class="progress-fill budol-safe" style="width:0%; background:var(--success);"></div></div>
+      </div>
+      
+      <div id="overspentHint" class="hint" style="display: none; text-align: center; margin-bottom: 16px;">
+        ⚠️ You've spent more than your budget today
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Add Budget</h2>
+        </div>
+        <form id="budgetForm" class="form-row">
+          <div class="input-group flex-grow">
+            <span class="input-prefix">₱</span>
+            <input type="number" id="budgetAmount" step="0.01" min="0.01" max="999999.99" placeholder="0.00" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+        <ul id="todayBudgets" class="list"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Log Expense</h2>
+        </div>
+        <form id="expenseForm">
+          <div class="form-col">
+            <div class="input-group">
+              <span class="input-prefix">₱</span>
+              <input type="number" id="expenseAmount" step="0.01" min="0.01" max="999999.99" placeholder="0.00" required>
+            </div>
+            
+            <input type="hidden" id="expenseCategory" required>
+            <div id="quickCategoriesList" class="quick-categories">
+              <!-- Rendered by JS -->
+            </div>
+            
+            <input type="text" id="expenseNote" class="input" maxlength="100" placeholder="Note (optional)">
+            
+            <button type="submit" class="btn btn-success" style="margin-top: 8px;">Log Expense</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Recent</h2>
+          <button type="button" class="link-btn" data-tab="expenses">View All</button>
+        </div>
+        <ul id="recentExpenses" class="list"></ul>
+        <div id="recentEmpty" style="display: none; text-align: center; padding: 20px; color: var(--text-secondary); font-size: 14px;">
+          No expenses today — keep it up! 💪
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Savings Goals</h2>
+          <button type="button" class="link-btn" data-tab="savings">Manage</button>
+        </div>
+        <div id="savingsQuick" class="savings-quick"></div>
+        <div id="savingsEmpty" style="display: none; text-align: center; padding: 20px; color: var(--text-secondary); font-size: 14px;">
+          No savings goals yet
+        </div>
+      </div>
+    </section>
+
+    <!-- === EXPENSES VIEW === -->
+    <section id="viewExpenses" class="tab-view">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Expenses</h2>
+          <select id="expenseFilter" class="select select-sm">
+            <option value="today">Today</option>
+            <option value="7days">Last 7 Days</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div id="expenseSummary" class="expense-summary"></div>
+        <ul id="allExpenses" class="list"></ul>
+        <div id="expensesEmpty" style="display: none; text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+          No expenses found for this period
+        </div>
+      </div>
+    </section>
+
+    <!-- === SAVINGS VIEW === -->
+    <section id="viewSavings" class="tab-view">
+      <div id="contributeCard" class="card" style="display: none;">
+        <div class="card-header">
+          <h2 class="card-title">Add Contribution</h2>
+        </div>
+        <form id="contributionForm">
+          <div class="form-col">
+            <select id="goalSelect" class="select" required></select>
+            <div class="form-row">
+              <div class="input-group flex-grow">
+                <span class="input-prefix">₱</span>
+                <input type="number" id="contributionAmount" step="0.01" min="0.01" placeholder="Amount" required>
+              </div>
+              <button type="submit" class="btn btn-success">Add</button>
+            </div>
+            <button type="button" id="saveLeftoverBtn" class="btn btn-warning" style="margin-top: 8px;">
+              💰 Save Leftover Today
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Active Goals</h2>
+        </div>
+        <div id="goalsList"></div>
+        <div id="goalsEmpty" style="display: none; text-align: center; padding: 30px; color: var(--text-secondary);">
+          No savings goals yet — create one below!
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">New Goal</h2>
+        </div>
+        <form id="goalForm">
+          <div class="form-col">
+            <input type="text" id="goalName" class="input" maxlength="50" placeholder="e.g., New Phone" required>
+            <div class="form-row">
+              <div class="input-group flex-grow">
+                <span class="input-prefix">₱</span>
+                <input type="number" id="goalTarget" step="0.01" min="1" max="999999.99" placeholder="Target amount" required>
+              </div>
+              <input type="date" id="goalDate" class="input flex-grow" style="min-width: 130px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 8px;">Create Goal</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="completedGoalsCard" class="card" style="display: none;">
+        <div class="card-header">
+          <h2 class="card-title">Completed Goals 🎉</h2>
+        </div>
+        <div id="completedGoals"></div>
+      </div>
+    </section>
+
+    <!-- === INSIGHTS VIEW === -->
+    <section id="viewInsights" class="tab-view">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Category Breakdown</h2>
+          <select id="chartPeriod" class="select select-sm">
+            <option value="today">Today</option>
+            <option value="7days">Last 7 Days</option>
+            <option value="month" selected>This Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div class="chart-container">
+          <canvas id="pieChart"></canvas>
+        </div>
+        <div id="chartEmpty" style="display: none; text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+          No spending data for this period
+        </div>
+        <div id="breakdownLegend" class="breakdown-legend"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Spending Trend</h2>
+        </div>
+        <div class="chart-container chart-wide" style="height:200px">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Summary</h2>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span id="statTotalExpenses" class="stat-value">₱0.00</span>
+            <span class="stat-label">Total Expenses</span>
+          </div>
+          <div class="stat-item">
+            <span id="statTotalSaved" class="stat-value">₱0.00</span>
+            <span class="stat-label">Total Saved</span>
+          </div>
+          <div class="stat-item" style="grid-column: span 2;">
+            <span id="statTopCategory" class="stat-value">—</span>
+            <span class="stat-label">Top Category</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- === UTANG VIEW === -->
+    <section id="viewUtang" class="tab-view">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Add Utang / Pautang</h2>
+        </div>
+        <form id="debtForm">
+          <div class="form-col">
+            <div class="form-row">
+              <select id="debtType" class="select" required style="width: 120px; flex-shrink: 0;">
+                <option value="owes_me" selected>Owes me</option>
+                <option value="owe_them">I owe</option>
+              </select>
+              <input type="text" id="debtPerson" class="input flex-grow" maxlength="50" placeholder="Person's name" required>
+            </div>
+            <div class="form-row">
+              <div class="input-group flex-grow">
+                <span class="input-prefix">₱</span>
+                <input type="number" id="debtAmount" step="0.01" min="0.01" placeholder="0.00" required>
+              </div>
+              <button type="submit" class="btn btn-primary" style="padding: 0 20px;">Add</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Active Ledger</h2>
+        </div>
+        <div id="debtsList"></div>
+        <div id="debtsEmpty" style="display: none; text-align: center; padding: 20px; color: var(--text-secondary);">
+          No active debts — peace of mind! 😌
+        </div>
+      </div>
+    </section>
+
+    <!-- === SETTINGS VIEW === -->
+    <section id="viewSettings" class="tab-view">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Appearance</h2></div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Dark Mode</div>
+            <div class="setting-desc">Reduce eye strain at night</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="darkModeToggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Categories</h2></div>
+        <form id="categoryForm" class="form-row" style="margin-bottom: 16px;">
+          <input type="text" id="categoryName" class="input flex-grow" maxlength="30" placeholder="New category name" required>
+          <button type="submit" class="btn btn-primary btn-sm">Add</button>
+        </form>
+        <ul id="categoriesList" class="list categories-list"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Export Data</h2></div>
+        <form style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="form-row">
+            <div class="form-col flex-grow">
+              <span class="setting-desc">From</span>
+              <input type="date" id="exportFrom" class="input">
+            </div>
+            <div class="form-col flex-grow">
+              <span class="setting-desc">To</span>
+              <input type="date" id="exportTo" class="input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col flex-grow">
+              <span class="setting-desc">Data Type</span>
+              <select id="exportType" class="select">
+                <option value="expenses">Expenses Only</option>
+                <option value="all">All Data</option>
+              </select>
+            </div>
+            <div class="form-col flex-grow">
+              <span class="setting-desc">Format</span>
+              <select id="exportFormat" class="select">
+                <option value="csv">CSV (Spreadsheet)</option>
+                <option value="pdf">PDF Report</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" id="exportBtn" class="btn btn-primary" style="margin-top: 4px;">📥 Export</button>
+        </form>
+      </div>
+
+      <div class="card card-danger">
+        <div class="card-header"><h2 class="card-title" style="color: var(--danger);">Danger Zone</h2></div>
+        <p class="about-text" style="margin-bottom: 12px;">This will permanently delete all your tracking data from this browser.</p>
+        <button type="button" id="clearDataBtn" class="btn btn-danger" style="width: 100%;">🗑️ Clear All Data</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">About</h2></div>
+        <p class="about-text">
+          <strong>BudolWatcher v1.2</strong><br><br>
+          A minimalist, local-first web app for Filipino students to track daily budgets, expenses, and savings goals in Philippine Peso. 
+          Data is saved safely in your browser.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="dashboard">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-item" data-tab="expenses">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Expenses</span>
+    </button>
+    <button class="nav-item" data-tab="savings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V3h8a4.5 4.5 0 0 1 0 9H7M7 8h10M7 12h10"/></svg>
+      <span>Savings</span>
+    </button>
+    <button class="nav-item" data-tab="insights">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+      <span>Insights</span>
+    </button>
+    <button class="nav-item" data-tab="utang">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Utang</span>
+    </button>
+    <button class="nav-item" data-tab="settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Confirm Dialog Overlay -->
+  <div id="confirmOverlay" class="overlay hidden">
+    <div class="dialog">
+      <p id="confirmMsg"></p>
+      <div class="dialog-actions">
+        <button id="confirmCancel" class="btn btn-outline btn-sm">Cancel</button>
+        <button id="confirmOk" class="btn btn-danger btn-sm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Install Banner -->
+  <div id="installBanner" class="install-banner hidden">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="./assets/icons/icon-192.png" width="36" height="36" alt="BudolWatcher" style="border-radius: 8px;">
+      <div>
+        <div style="font-weight: 600; font-size: 14px; color: var(--text);">Install BudolWatcher</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Add to home screen for offline use</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button id="installDismiss" style="font-size: 18px; color: var(--text-muted); padding: 4px;">&times;</button>
+      <button id="installBtn" class="btn btn-success btn-sm">Install</button>
+    </div>
+  </div>
+
+  <!-- External Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- App Scripts -->
+  <script src="./js/sync.js"></script>
+  <script src="./js/store.js"></script>
+  <script src="./js/app.js"></script>
+
+</body>
+</html>
