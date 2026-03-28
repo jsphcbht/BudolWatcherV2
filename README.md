@@ -1,6 +1,5 @@
 # ₱ BudolWatcher V2
 
-![BudolWatcher V2 Hero](./budolwatcher_v2_hero.png)
 
 > **The ultimate local-first budget tracker for Filipino students.**
 
